@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>синтезатор настроения</title>
+    <link rel="stylesheet" href="reset.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/tone@15"></script>
+    <script src="script.js"></script>
+  </head>
+
+  <body data-mood="minor">
+    <!-- ВРЕМЕННЫЙ интерфейс: чтобы слышать звук. Дизайн заменим по макету -->
+    <main class="Synth">
+      <section class="Transport">
+        <div class="Button" id="startButton">старт</div>
+        <div class="Button" id="moodButton">минор</div>
+        <div class="Steps" id="steps"></div>
+      </section>
+
+      <section class="Panel">
+        <h2 class="Panel__title">синт 1 / бас</h2>
+        <div class="Panel__row">
+          <div class="Button" data-wave="bass"></div>
+          <div class="Button" data-mute="bass">вкл</div>
+        </div>
+        <label class="Slider"
+          >громкость
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.8"
+            data-param="bassVolume"
+        /></label>
+        <label class="Slider"
+          >перегруз
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.2"
+            data-param="bassDrive"
+        /></label>
+      </section>
+
+      <section class="Panel">
+        <h2 class="Panel__title">синт 2 / аккорды</h2>
+        <div class="Panel__row">
+          <div class="Button" data-wave="chords"></div>
+          <div class="Button" data-mute="chords">вкл</div>
+        </div>
+        <label class="Slider"
+          >громкость
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.8"
+            data-param="chordsVolume"
+        /></label>
+        <label class="Slider"
+          >хорус
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.5"
+            data-param="chordsChorus"
+        /></label>
+        <label class="Slider"
+          >эхо
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.25"
+            data-param="chordsDelay"
+        /></label>
+        <label class="Slider"
+          >панорама
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0"
+            data-param="chordsPan"
+        /></label>
+      </section>
+
+      <section class="Panel">
+        <h2 class="Panel__title">барабаны</h2>
+        <div class="Panel__row">
+          <div class="Button" data-mute="drums">вкл</div>
+        </div>
+        <label class="Slider"
+          >громкость
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.8"
+            data-param="drumsVolume"
+        /></label>
+        <label class="Slider"
+          >биткраш
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0"
+            data-param="drumsCrush"
+        /></label>
+      </section>
+
+      <section class="Panel">
+        <h2 class="Panel__title">мастер</h2>
+        <label class="Slider"
+          >реверб
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.5"
+            data-param="reverb"
+        /></label>
+      </section>
+    </main>
+  </body>
+</html>
