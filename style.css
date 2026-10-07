@@ -1,0 +1,103 @@
+/* ВРЕМЕННЫЕ стили: ч/б заготовка, заменим по макету */
+
+:root {
+  --white: #ffffff;
+  --black: #000000;
+  --grey: #c5c5c5;
+  --panel: #f2f2f2;
+}
+
+body {
+  min-height: 100vh;
+  padding: 24px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  background-color: var(--black);
+  color: var(--black);
+}
+
+.Synth {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  max-width: 1100px;
+}
+
+.Transport {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: var(--panel);
+}
+
+.Panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: var(--panel);
+}
+
+.Panel__title {
+  font-size: 16px;
+}
+
+.Panel__row {
+  display: flex;
+  gap: 8px;
+}
+
+.Button {
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background-color: var(--black);
+  color: var(--white);
+  cursor: pointer;
+  user-select: none;
+}
+
+.Button:hover {
+  opacity: 0.8;
+}
+
+.Button--off {
+  background-color: var(--grey);
+  color: var(--black);
+}
+
+.Slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.Slider input {
+  width: 100%;
+  accent-color: var(--black);
+}
+
+.Steps {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.Step {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--black);
+  border-radius: 50%;
+}
+
+.Step:nth-child(4n + 1) {
+  border-color: #777;
+}
+
+.Step--active {
+  background-color: var(--black);
+}
