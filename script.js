@@ -1,7 +1,7 @@
 // =====================================================
 // СТРУКТУРА ИНСТРУМЕНТА
 //
-// synth1Bass   -> bassDistortion                              -> bassChannel   -\
+// synth1Bells  -> bellsVibrato                                -> bellsChannel  -\
 // synth2Chords -> chordsChorus -> chordsDelay -> chordsPanner  -> chordsChannel -->  masterChannel -> compressor -> limiter -> выход
 // drumKick/Clap/Hat -> drumsCrusher                           -> drumsChannel  -/
 //
@@ -22,11 +22,11 @@ const WAVE_LABELS = {
 const MOOD_LABELS = { minor: 'минор', major: 'мажор' }
 
 // базовая громкость каналов в dB (слайдер громкости работает поверх неё)
-const BASE_VOLUME = { bass: -6, chords: -14, drums: -4 }
+const BASE_VOLUME = { bells: -3, chords: -17, drums: -4 }
 
 // ---------- 2. МУЗЫКА ----------
 // Паттерн = строка из 16 шагов (1 такт шестнадцатыми)
-// bass:   x = основной тон, o = октавой выше, . = пауза
+// bells:  0-3 = номер ноты текущего аккорда (звучит на 1 октаву выше), . = пауза
 // hits:   c = аккорд целиком, a = нота арпеджио
 // hat:    x = тихо, X = акцент
 
@@ -38,8 +38,7 @@ const songs = {
       ['D3', 'F3', 'A3', 'C4'],
       ['E3', 'G3', 'B3', 'D4']
     ],
-    bassRoots: ['A1', 'F1', 'D2', 'E2'],
-    bass: 'x..x..x.x..x.o..',
+    bells: '3.....2...1.....',
     hits: 'c.....c...c.....',
     kick: 'x...x...x...x...',
     clap: '........x.......',
@@ -52,8 +51,7 @@ const songs = {
       ['B3', 'D4', 'F#4', 'A4'],
       ['G3', 'B3', 'D4', 'F#4']
     ],
-    bassRoots: ['D2', 'A1', 'B1', 'G1'],
-    bass: 'x.ox.ox.x.ox.oxo',
+    bells: '0..2..3...2.1...',
     hits: 'c.ac.ac.a.c.acaa',
     kick: 'x...x...x...x..x',
     clap: '....x.......x...',
@@ -70,8 +68,8 @@ const state = {
   mood: 'minor',
   bar: -1,
   arpIndex: 0,
-  waves: { bass: 'sawtooth', chords: 'square' },
-  mutes: { bass: false, chords: false, drums: false }
+  waves: { bells: 'sine', chords: 'triangle' },
+  mutes: { bells: false, chords: false, drums: false }
 }
 
 let audio = null // сюда соберутся все звуковые узлы после первого старта
@@ -96,26 +94,24 @@ function buildAudio() {
   const reverbBus = new Tone.Channel({ volume: -6 }).receive('reverb')
   reverbBus.chain(reverb, masterChannel)
 
-  // СИНТ 1 / БАС
-  const bassChannel = new Tone.Channel({ volume: BASE_VOLUME.bass }).connect(
+  // СИНТ 1 / КОЛОКОЛЬЧИКИ: звенящие FM-ноты в среднем регистре
+  const bellsChannel = new Tone.Channel({ volume: BASE_VOLUME.bells }).connect(
     masterChannel
   )
-  const bassDistortion = new Tone.Distortion({
-    distortion: 0.5,
-    wet: 0.2
-  }).connect(bassChannel)
-  const synth1Bass = new Tone.MonoSynth({
-    oscillator: { type: state.waves.bass },
-    envelope: { attack: 0.005, decay: 0.2, sustain: 0.4, release: 0.2 },
-    filterEnvelope: {
-      attack: 0.005,
-      decay: 0.15,
-      sustain: 0.3,
-      baseFrequency: 120,
-      octaves: 3
-    }
-  }).connect(bassDistortion)
-  bassChannel.send('reverb', -30)
+  const bellsVibrato = new Tone.Vibrato({
+    frequency: 4,
+    depth: 0.15,
+    wet: 0.3
+  }).connect(bellsChannel)
+  const synth1Bells = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 3,
+    modulationIndex: 2, // меньше = мягче и теплее, больше = звонче
+    oscillator: { type: state.waves.bells },
+    modulation: { type: 'sine' },
+    envelope: { attack: 0.02, decay: 1.6, sustain: 0, release: 2.5 },
+    modulationEnvelope: { attack: 0.02, decay: 0.25, sustain: 0, release: 1 }
+  }).connect(bellsVibrato)
+  bellsChannel.send('reverb', -6)
 
   // СИНТ 2 / АККОРДЫ
   const chordsChannel = new Tone.Channel({
@@ -139,7 +135,7 @@ function buildAudio() {
     .start()
   const synth2Chords = new Tone.PolySynth(Tone.Synth, {
     oscillator: { type: state.waves.chords },
-    envelope: { attack: 0.01, decay: 0.25, sustain: 0.15, release: 0.6 }
+    envelope: { attack: 0.06, decay: 0.5, sustain: 0.2, release: 1.4 }
   }).connect(chordsChorus)
   chordsChannel.send('reverb', -10)
 
@@ -174,9 +170,9 @@ function buildAudio() {
     masterMeter,
     reverb,
     reverbBus,
-    synth1Bass,
-    bassDistortion,
-    bassChannel,
+    synth1Bells,
+    bellsVibrato,
+    bellsChannel,
     synth2Chords,
     chordsChorus,
     chordsDelay,
@@ -196,18 +192,18 @@ function octaveUp(note) {
   return Tone.Frequency(note).transpose(12).toNote()
 }
 
-function playBass(symbol, root, time) {
-  if (symbol === 'x') audio.synth1Bass.triggerAttackRelease(root, '16n', time)
-  if (symbol === 'o')
-    audio.synth1Bass.triggerAttackRelease(octaveUp(root), '16n', time)
+function playBells(symbol, chord, time) {
+  if (symbol === '.') return
+  const note = octaveUp(chord[parseInt(symbol)])
+  audio.synth1Bells.triggerAttackRelease(note, '8n', time, 0.5)
 }
 
 function playChords(symbol, chord, time) {
   if (symbol === 'c')
-    audio.synth2Chords.triggerAttackRelease(chord, '16n', time, 0.7)
+    audio.synth2Chords.triggerAttackRelease(chord, '8n', time, 0.45)
   if (symbol === 'a') {
     const note = chord[state.arpIndex % chord.length]
-    audio.synth2Chords.triggerAttackRelease(octaveUp(note), '32n', time, 0.5)
+    audio.synth2Chords.triggerAttackRelease(octaveUp(note), '16n', time, 0.3)
     state.arpIndex++
   }
 }
@@ -230,7 +226,7 @@ function buildSequencer() {
       const song = songs[state.mood]
       if (step === 0) state.bar = (state.bar + 1) % song.chords.length
 
-      playBass(song.bass[step], song.bassRoots[state.bar], time)
+      playBells(song.bells[step], song.chords[state.bar], time)
       playChords(song.hits[step], song.chords[state.bar], time)
       playDrums(song, step, time)
 
@@ -244,9 +240,9 @@ function buildSequencer() {
 // ---------- 6. УПРАВЛЕНИЕ ----------
 
 const params = {
-  bassVolume: (v) =>
-    (audio.bassChannel.volume.value = BASE_VOLUME.bass + Tone.gainToDb(v)),
-  bassDrive: (v) => (audio.bassDistortion.wet.value = v),
+  bellsVolume: (v) =>
+    (audio.bellsChannel.volume.value = BASE_VOLUME.bells + Tone.gainToDb(v)),
+  bellsVibrato: (v) => (audio.bellsVibrato.wet.value = v),
   chordsVolume: (v) =>
     (audio.chordsChannel.volume.value = BASE_VOLUME.chords + Tone.gainToDb(v)),
   chordsChorus: (v) => (audio.chordsChorus.wet.value = v),
@@ -266,7 +262,7 @@ function applyParam(input) {
 function applyWave(target) {
   if (!audio) return
   const type = state.waves[target]
-  if (target === 'bass') audio.synth1Bass.oscillator.type = type
+  if (target === 'bells') audio.synth1Bells.set({ oscillator: { type } })
   if (target === 'chords') audio.synth2Chords.set({ oscillator: { type } })
 }
 
