@@ -3,138 +3,206 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>синтезатор настроения</title>
+    <title>внутренняя погода</title>
     <link rel="stylesheet" href="reset.css" />
     <link rel="stylesheet" href="style.css" />
     <script src="https://unpkg.com/tone@15"></script>
     <script src="script.js"></script>
   </head>
 
-  <body data-mood="minor">
-    <!-- ВРЕМЕННЫЙ интерфейс: чтобы слышать звук. Дизайн заменим по макету -->
-    <main class="Synth">
-      <section class="Transport">
-        <div class="Button" id="startButton">старт</div>
-        <div class="Button" id="moodButton">минор</div>
-        <div class="Steps" id="steps"></div>
-      </section>
-
-      <section class="Panel">
-        <h2 class="Panel__title">синт 1 / колокольчики</h2>
-        <div class="Panel__row">
-          <div class="Button" data-wave="bells"></div>
-          <div class="Button" data-mute="bells">вкл</div>
+  <body data-mood="minor" data-playing="false">
+    <div class="Station">
+      <!-- ===== ПАНЕЛЬ: название, погода, время, старт ===== -->
+      <header class="Header">
+        <div class="Logo">
+          <h1 class="Logo__name">внутренняя погода</h1>
+          <p class="Logo__note">метеостанция настроения</p>
         </div>
-        <label class="Slider"
-          >громкость
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.8"
-            data-param="bellsVolume"
-        /></label>
-        <label class="Slider"
-          >вибрато
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.3"
-            data-param="bellsVibrato"
-        /></label>
-      </section>
 
-      <section class="Panel">
-        <h2 class="Panel__title">синт 2 / аккорды</h2>
-        <div class="Panel__row">
-          <div class="Button" data-wave="chords"></div>
-          <div class="Button" data-mute="chords">вкл</div>
+        <div class="MoodSwitch" role="radiogroup" aria-label="погода">
+          <button
+            class="MoodSwitch__option"
+            data-mood-option="minor"
+            role="radio"
+            aria-checked="true"
+          >
+            пасмурно
+          </button>
+          <button
+            class="MoodSwitch__option"
+            data-mood-option="major"
+            role="radio"
+            aria-checked="false"
+          >
+            ясно
+          </button>
         </div>
-        <label class="Slider"
-          >громкость
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.8"
-            data-param="chordsVolume"
-        /></label>
-        <label class="Slider"
-          >хорус
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.5"
-            data-param="chordsChorus"
-        /></label>
-        <label class="Slider"
-          >эхо
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.25"
-            data-param="chordsDelay"
-        /></label>
-        <label class="Slider"
-          >панорама
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0"
-            data-param="chordsPan"
-        /></label>
-      </section>
 
-      <section class="Panel">
-        <h2 class="Panel__title">барабаны</h2>
-        <div class="Panel__row">
-          <div class="Button" data-mute="drums">вкл</div>
+        <div class="Time">
+          <span class="Time__label">время</span>
+          <div class="Steps" id="steps"></div>
         </div>
-        <label class="Slider"
-          >громкость
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.8"
-            data-param="drumsVolume"
-        /></label>
-        <label class="Slider"
-          >биткраш
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0"
-            data-param="drumsCrush"
-        /></label>
+
+        <button class="StartButton" id="startButton">
+          <span class="StartButton__icon" aria-hidden="true"></span>
+          <span class="StartButton__text" id="startText">старт</span>
+        </button>
+      </header>
+
+      <!-- ===== НЕБО: живой градиент (единственный цветной элемент) ===== -->
+      <section class="Sky" id="sky" aria-label="небо">
+        <div class="Sky__weather">
+          <div class="Sky__layer Sky__layer--still">
+            <span class="Cloud Cloud--a"></span>
+            <span class="Cloud Cloud--b"></span>
+            <span class="Cloud Cloud--c"></span>
+          </div>
+          <div class="Sky__layer Sky__layer--minor">
+            <span class="Cloud Cloud--a"></span>
+            <span class="Cloud Cloud--b"></span>
+            <span class="Cloud Cloud--c"></span>
+            <span class="Cloud Cloud--d"></span>
+          </div>
+          <div class="Sky__layer Sky__layer--major">
+            <span class="Cloud Cloud--a"></span>
+            <span class="Cloud Cloud--b"></span>
+            <span class="Cloud Cloud--c"></span>
+            <span class="Cloud Cloud--d"></span>
+          </div>
+        </div>
+        <svg
+          class="Sky__isobars"
+          id="isobars"
+          viewBox="0 0 1000 400"
+          preserveAspectRatio="xMidYMid slice"
+          aria-hidden="true"
+        ></svg>
+        <div class="Sky__grain" aria-hidden="true"></div>
+
+        <div class="Forecast">
+          <p class="Forecast__mood" id="forecastMood">пасмурно</p>
+          <p class="Forecast__tempo" id="forecastTempo">тишина</p>
+        </div>
+        <p class="Sky__hint" id="skyHint">
+          нажми «старт», чтобы услышать погоду
+        </p>
       </section>
 
-      <section class="Panel">
-        <h2 class="Panel__title">мастер</h2>
-        <label class="Slider"
-          >реверб
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.5"
-            data-param="reverb"
-        /></label>
-      </section>
-    </main>
+      <!-- ===== ПРИБОРЫ ===== -->
+      <main class="Instruments">
+        <!-- синт 1 -->
+        <section class="Instrument Instrument--drops" data-target="bells">
+          <header class="Instrument__head">
+            <div class="Instrument__title">
+              <h2 class="Instrument__name">капли</h2>
+              <p class="Instrument__role">синт 1</p>
+            </div>
+            <span
+              class="Lamp Lamp--drop"
+              data-lamp="bells"
+              aria-hidden="true"
+            ></span>
+            <button
+              class="Mute"
+              data-mute="bells"
+              aria-pressed="true"
+              aria-label="капли включены"
+            ></button>
+          </header>
+          <div class="WavePicker" data-wave="bells"></div>
+          <div class="Instrument__controls">
+            <div
+              class="Knob Knob--xl"
+              data-param="bellsVolume"
+              data-value="0.8"
+              data-label="сила"
+            ></div>
+          </div>
+        </section>
+
+        <!-- синт 2 -->
+        <section class="Instrument Instrument--clouds" data-target="chords">
+          <header class="Instrument__head">
+            <div class="Instrument__title">
+              <h2 class="Instrument__name">облака</h2>
+              <p class="Instrument__role">синт 2</p>
+            </div>
+            <span
+              class="Lamp Lamp--cloud"
+              data-lamp="chords"
+              aria-hidden="true"
+            ></span>
+            <button
+              class="Mute"
+              data-mute="chords"
+              aria-pressed="true"
+              aria-label="облака включены"
+            ></button>
+          </header>
+          <div class="WavePicker" data-wave="chords"></div>
+          <div class="Instrument__controls">
+            <div
+              class="Fader"
+              data-param="chordsVolume"
+              data-value="0.8"
+              data-label="сила"
+            ></div>
+            <div
+              class="Knob"
+              data-param="chordsChorus"
+              data-value="0.5"
+              data-label="туман"
+            ></div>
+            <div
+              class="Knob"
+              data-param="chordsDelay"
+              data-value="0.25"
+              data-label="отражение"
+            ></div>
+          </div>
+        </section>
+
+        <!-- барабаны -->
+        <section class="Instrument Instrument--wind" data-target="drums">
+          <header class="Instrument__head">
+            <div class="Instrument__title">
+              <h2 class="Instrument__name">ветер</h2>
+              <p class="Instrument__role">барабаны</p>
+            </div>
+            <button
+              class="Mute"
+              data-mute="drums"
+              aria-pressed="true"
+              aria-label="ветер включён"
+            ></button>
+          </header>
+          <div class="Gusts" aria-hidden="true">
+            <span class="Gust"
+              ><span class="Lamp" data-lamp="kick"></span>бочка</span
+            >
+            <span class="Gust"
+              ><span class="Lamp" data-lamp="clap"></span>клэп</span
+            >
+            <span class="Gust"
+              ><span class="Lamp" data-lamp="hat"></span>хэт</span
+            >
+          </div>
+          <div class="Instrument__controls">
+            <div
+              class="Fader"
+              data-param="drumsVolume"
+              data-value="0.8"
+              data-label="сила"
+            ></div>
+            <div
+              class="Knob Knob--lg"
+              data-param="drumsCrush"
+              data-value="0"
+              data-label="помехи"
+            ></div>
+          </div>
+        </section>
+      </main>
+    </div>
   </body>
 </html>
