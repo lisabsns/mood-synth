@@ -1,51 +1,42 @@
-/* =====================================================
-   ВНУТРЕННЯЯ ПОГОДА — стили
-   1. Токены: цвета и шрифты
-   2. Каркас страницы
-   3. Панель (название, погода, время, старт)
-   4. Небо (единственный цветной элемент)
-   5. Приборы (капли, облака, ветер)
-   6. Элементы управления (ползунок-термометр, ручка-барометр, волны, вкл/выкл, лампы)
-   7. Адаптив и доступность
-   ===================================================== */
-
-/* ---------- 1. ТОКЕНЫ ---------- */
+/* цвета и шрифт */
 
 :root {
-  /* шрифт: SF Pro Display Medium (на Mac и iPhone он системный).
-     На Windows его нет, поэтому дальше в списке запасные шрифты */
+
   --font-main:
     'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
     Arial, sans-serif;
   --font-weight: 500;
 
-  /* ч/б интерфейс */
-  --paper: #e6e7e5; /* фон страницы: мокрый асфальт, очень светлый */
-  --instrument: #f4f4f2; /* корпус приборов */
-  --ink: #000000; /* стрелки, шкалы, текст */
-  --graphite: #73746f; /* вторичный текст */
-  --line: #c5c6c2; /* неактивные деления */
+  --paper: #e6e7e5;
+  --instrument: #f4f4f2;
+  --ink: #000000;
+  --graphite: #73746f;
+  --line: #c5c6c2;
   --hover: #e8e8e5;
 
-  /* небо: тишина (до старта всё серое) */
   --still-1: #d4d6d8;
   --still-2: #a7abb0;
   --still-3: #f0f0f1;
 
-  /* небо: пасмурно (минор) */
-  --minor-1: #c3cde4;
-  --minor-2: #8aa8e0;
-  --minor-3: #e7e5f1;
-  --minor-4: #a8a5cb;
-
-  /* небо: ясно (мажор) */
-  --major-1: #f7ecd6;
-  --major-2: #f2d64a;
-  --major-3: #f0ab5f;
-  --major-4: #f2bfc7;
+  --fog-1: #cbd2e2;
+  --fog-2: #a7b5d1;
+  --fog-3: #e5e4ec;
+  --fog-4: #b9b7cf;
+  --drizzle-1: #a4b9d4;
+  --drizzle-2: #718ec5;
+  --drizzle-3: #d9dfed;
+  --drizzle-4: #9699c5;
+  --storm-1: #303346;
+  --storm-2: #677197;
+  --storm-3: #1c2031;
+  --storm-4: #494364;
+  --clear-1: #f7ecd6;
+  --clear-2: #f2d64a;
+  --clear-3: #f0ab5f;
+  --clear-4: #f2bfc7;
 }
 
-/* ---------- 2. КАРКАС ---------- */
+/* страница */
 
 *,
 *::before,
@@ -90,7 +81,7 @@ button {
   padding: 20px;
 }
 
-/* ---------- 3. ПАНЕЛЬ ---------- */
+/* панель */
 
 .Header {
   display: flex;
@@ -118,26 +109,34 @@ button {
   color: var(--graphite);
 }
 
-.MoodSwitch {
+.WeatherSwitch {
   display: flex;
+  flex-wrap: wrap;
   border: 1.5px solid var(--ink);
   border-radius: 6px;
   overflow: hidden;
 }
 
-.MoodSwitch__option {
-  padding: 8px 18px;
+.WeatherSwitch__option {
+  padding: 8px 14px;
   transition: background-color 0.2s;
 }
 
-.MoodSwitch__option[aria-checked='true'] {
+.WeatherSwitch__option[aria-checked='true'] {
   background: var(--ink);
   color: var(--instrument);
 }
 
-.MoodSwitch__option[aria-checked='false']:hover {
+.WeatherSwitch__option[aria-checked='false']:hover {
   background: var(--hover);
 }
+
+.WeatherSwitch__option[data-pending='true'] {
+  box-shadow: inset 0 -2px var(--ink);
+  background: var(--hover);
+}
+
+/* время */
 
 .Time {
   display: flex;
@@ -170,6 +169,8 @@ button {
   border-color: var(--ink);
 }
 
+/* старт и стоп */
+
 .StartButton {
   display: flex;
   align-items: center;
@@ -197,7 +198,7 @@ body[data-playing='true'] .StartButton__icon {
   background: currentColor;
 }
 
-/* ---------- 4. НЕБО ---------- */
+/* небо */
 
 .Sky {
   position: relative;
@@ -206,10 +207,14 @@ body[data-playing='true'] .StartButton__icon {
   overflow: hidden;
   border-radius: 28px;
   background: var(--still-3);
+  color: var(--ink);
+  transition: color 1.8s ease;
 }
 
-/* всё небо слегка «дышит» от громкости (масштаб каждый кадр ставит script.js).
-   will-change: небо рисуется видеокартой отдельным слоем и не перерисовывается целиком */
+body[data-playing='true'][data-weather='storm'] .Sky {
+  color: #f4f4f2;
+}
+
 .Sky__weather {
   position: absolute;
   inset: -12%;
@@ -222,32 +227,62 @@ body[data-playing='true'] .StartButton__icon {
   inset: 0;
   opacity: 0;
   transition: opacity 1.8s ease;
+  will-change: transform;
 }
 
 .Sky__layer--still {
+  --sky-cloud-a: var(--still-2);
+  --sky-cloud-b: var(--still-3);
+  --sky-cloud-c: var(--still-2);
   opacity: 1;
   background: linear-gradient(180deg, var(--still-3) 0%, var(--still-1) 100%);
 }
 
-.Sky__layer--minor {
-  background: linear-gradient(170deg, var(--minor-3) 0%, var(--minor-1) 80%);
+.Sky__layer--fog {
+  --sky-cloud-a: var(--fog-4);
+  --sky-cloud-b: var(--fog-1);
+  --sky-cloud-c: var(--fog-4);
+  --sky-cloud-d: var(--fog-2);
+  background: linear-gradient(170deg, var(--fog-3) 0%, var(--fog-1) 80%);
 }
 
-.Sky__layer--major {
-  background: linear-gradient(170deg, var(--major-1) 0%, #fbf3e3 100%);
+.Sky__layer--drizzle {
+  --sky-cloud-a: var(--drizzle-4);
+  --sky-cloud-b: var(--drizzle-1);
+  --sky-cloud-c: var(--drizzle-4);
+  --sky-cloud-d: var(--drizzle-2);
+  background: linear-gradient(170deg, var(--drizzle-3) 0%, var(--drizzle-1) 80%);
 }
 
-/* цвет появляется только когда звучит музыка */
+.Sky__layer--storm {
+  --sky-cloud-a: var(--storm-4);
+  --sky-cloud-b: var(--storm-1);
+  --sky-cloud-c: var(--storm-4);
+  --sky-cloud-d: var(--storm-2);
+  background: linear-gradient(170deg, var(--storm-3) 0%, var(--storm-1) 100%);
+}
+
+.Sky__layer--clear {
+  --sky-cloud-a: var(--clear-3);
+  --sky-cloud-b: var(--clear-4);
+  --sky-cloud-c: var(--clear-2);
+  --sky-cloud-d: var(--clear-2);
+  background: linear-gradient(170deg, var(--clear-1) 0%, #fbf3e3 100%);
+}
+
 body[data-playing='true'] .Sky__layer--still {
   opacity: 0;
 }
 
-body[data-playing='true'][data-mood='minor'] .Sky__layer--minor,
-body[data-playing='true'][data-mood='major'] .Sky__layer--major {
+body[data-playing='true'][data-weather='fog'] .Sky__layer--fog,
+body[data-playing='true'][data-weather='drizzle'] .Sky__layer--drizzle,
+body[data-playing='true'][data-weather='storm'] .Sky__layer--storm,
+body[data-playing='true'][data-weather='clear'] .Sky__layer--clear {
   opacity: 1;
 }
 
-/* облака: мягкие пятна цвета, медленно плывут */
+/* облака */
+
 .Cloud {
   position: absolute;
   border-radius: 50%;
@@ -280,51 +315,27 @@ body[data-playing='true'][data-mood='major'] .Sky__layer--major {
   animation-delay: -7s;
 }
 
-/* «солнце» или самое плотное облако: ярче, когда громче */
 .Cloud--d {
   left: 50%;
   top: 14%;
   width: 30%;
   height: 80%;
-  opacity: 0.5; /* ярче, когда громче: меняет script.js */
+  opacity: 0.5;
   animation-duration: 26s;
   animation-delay: -19s;
 }
 
-.Sky__layer--still .Cloud--a {
-  background: radial-gradient(closest-side, var(--still-2), transparent);
+.Sky__layer .Cloud--a {
+  background: radial-gradient(closest-side, var(--sky-cloud-a, var(--still-2)), transparent);
 }
-.Sky__layer--still .Cloud--b {
-  background: radial-gradient(closest-side, var(--still-3), transparent);
+.Sky__layer .Cloud--b {
+  background: radial-gradient(closest-side, var(--sky-cloud-b, var(--still-3)), transparent);
 }
-.Sky__layer--still .Cloud--c {
-  background: radial-gradient(closest-side, var(--still-2), transparent);
+.Sky__layer .Cloud--c {
+  background: radial-gradient(closest-side, var(--sky-cloud-c, var(--still-2)), transparent);
 }
-
-.Sky__layer--minor .Cloud--a {
-  background: radial-gradient(closest-side, var(--minor-4), transparent);
-}
-.Sky__layer--minor .Cloud--b {
-  background: radial-gradient(closest-side, var(--minor-1), transparent);
-}
-.Sky__layer--minor .Cloud--c {
-  background: radial-gradient(closest-side, var(--minor-4), transparent);
-}
-.Sky__layer--minor .Cloud--d {
-  background: radial-gradient(closest-side, var(--minor-2), transparent);
-}
-
-.Sky__layer--major .Cloud--a {
-  background: radial-gradient(closest-side, var(--major-3), transparent);
-}
-.Sky__layer--major .Cloud--b {
-  background: radial-gradient(closest-side, var(--major-4), transparent);
-}
-.Sky__layer--major .Cloud--c {
-  background: radial-gradient(closest-side, var(--major-2), transparent);
-}
-.Sky__layer--major .Cloud--d {
-  background: radial-gradient(closest-side, var(--major-2), transparent);
+.Sky__layer .Cloud--d {
+  background: radial-gradient(closest-side, var(--sky-cloud-d, var(--still-3)), transparent);
 }
 
 @keyframes drift {
@@ -336,16 +347,17 @@ body[data-playing='true'][data-mood='major'] .Sky__layer--major {
   }
 }
 
-/* изобары: линии давления, как на синоптической карте */
+/* изобары */
+
 .Sky__isobars {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: var(--ink);
+  stroke: currentColor;
   pointer-events: none;
-  will-change: transform; /* статичный слой: не перерисовывается, пока плывут облака */
+  will-change: transform;
 }
 
 .Sky__isobars path {
@@ -354,16 +366,8 @@ body[data-playing='true'][data-mood='major'] .Sky__layer--major {
   vector-effect: non-scaling-stroke;
 }
 
-.Isobars__value {
-  fill: var(--ink);
-  fill-opacity: 0.5;
-  stroke: none;
-  font-size: 13px;
-  font-family: var(--font-main);
-}
-
 .Isobars__center circle {
-  fill: var(--ink);
+  fill: currentColor;
   stroke: none;
 }
 
@@ -376,7 +380,12 @@ body[data-playing='true'][data-mood='major'] .Sky__layer--major {
   dominant-baseline: central;
 }
 
-/* зерно, как на плёнке */
+body[data-playing='true'][data-weather='storm'] .Isobars__center text {
+  fill: var(--storm-3);
+}
+
+/* зерно */
+
 .Sky__grain {
   position: absolute;
   inset: 0;
@@ -387,13 +396,15 @@ body[data-playing='true'][data-mood='major'] .Sky__layer--major {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.45 0 0 0 0 0.45 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* прогноз */
+
 .Forecast {
   position: absolute;
   left: 30px;
   top: 26px;
 }
 
-.Forecast__mood {
+.Forecast__weather {
   font-size: 48px;
   font-weight: var(--font-weight);
   line-height: 1;
@@ -419,17 +430,18 @@ body[data-playing='true'] .Sky__hint {
   opacity: 0;
 }
 
-/* ---------- 5. ПРИБОРЫ ---------- */
+/* приборы */
 
 .Instruments {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* три одинаковых прибора */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
 .Instrument {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 18px;
   min-height: 372px;
   padding: 18px 16px 20px 22px;
@@ -461,14 +473,12 @@ body[data-playing='true'] .Sky__hint {
 
 .Instrument__controls {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end; /* подписи во всех приборах на одной линии */
-  gap: 22px 26px;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 22px 12px;
   margin-top: auto;
 }
 
-/* первый элемент стоит у левого края, по линии заголовка;
-   ручки эффектов — по центру оставшегося места */
 .Fader + .Knob {
   margin-left: auto;
 }
@@ -477,13 +487,13 @@ body[data-playing='true'] .Sky__hint {
   margin-right: auto;
 }
 
-/* у капель одна большая ручка силы — ровно по центру прибора */
 .Instrument--drops .Instrument__controls {
-  margin-left: -6px; /* компенсирует разницу левого и правого отступов карточки */
+  justify-content: center;
+  margin-left: -6px;
 }
 
 .Instrument--drops .Knob {
-  margin-inline: auto;
+  margin-inline: 0;
 }
 
 .WavePicker,
@@ -492,16 +502,14 @@ body[data-playing='true'] .Sky__hint {
   transition: opacity 0.3s;
 }
 
-/* выключенный прибор бледнеет */
 .Instrument--muted .WavePicker,
 .Instrument--muted .Instrument__controls,
 .Instrument--muted .Gusts {
   opacity: 0.32;
 }
 
-/* ---------- 6. ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ---------- */
+/* подписи */
 
-/* подпись + значение под каждой ручкой и ползунком */
 .Control__caption {
   display: flex;
   align-items: center;
@@ -522,7 +530,8 @@ body[data-playing='true'] .Sky__hint {
   font-variant-numeric: tabular-nums;
 }
 
-/* ползунок-термометр: сила (громкость) */
+/* ползунки */
+
 .Fader {
   display: flex;
   flex-direction: column;
@@ -533,7 +542,7 @@ body[data-playing='true'] .Sky__hint {
 .Fader__body {
   width: 62px;
   height: 182px;
-  margin-left: -7px; /* колба термометра встаёт ровно по линии заголовка */
+  margin-left: -7px;
   touch-action: none;
   cursor: ns-resize;
 }
@@ -575,7 +584,8 @@ body[data-playing='true'] .Sky__hint {
   dominant-baseline: central;
 }
 
-/* ручка-барометр: эффекты */
+/* ручки */
+
 .Knob {
   display: flex;
   flex-direction: column;
@@ -591,7 +601,6 @@ body[data-playing='true'] .Sky__hint {
   cursor: ns-resize;
 }
 
-/* размеры ручек: lg — в 1,5 раза больше, xl — в 2 раза больше обычной */
 .Knob--lg .Knob__dial {
   width: 138px;
   height: 138px;
@@ -602,7 +611,6 @@ body[data-playing='true'] .Sky__hint {
   height: 184px;
 }
 
-/* толщина линий одинаковая у ручек любого размера */
 .Knob__dial line,
 .Knob__face {
   vector-effect: non-scaling-stroke;
@@ -637,7 +645,8 @@ body[data-playing='true'] .Sky__hint {
   fill: var(--ink);
 }
 
-/* выбор формы волны: залитая фигура = выбрана */
+/* волны */
+
 .WavePicker {
   display: flex;
   align-items: center;
@@ -681,7 +690,8 @@ body[data-playing='true'] .Sky__hint {
   color: var(--graphite);
 }
 
-/* вкл/выкл: залитый квадрат = звучит */
+/* вкл и выкл */
+
 .Mute {
   display: grid;
   place-items: center;
@@ -707,7 +717,8 @@ body[data-playing='true'] .Sky__hint {
   background: var(--hover);
 }
 
-/* лампы: мигают на каждую ноту и удар */
+/* лампы */
+
 .Lamp {
   flex: none;
   width: 10px;
@@ -742,7 +753,7 @@ body[data-playing='true'] .Sky__hint {
   gap: 6px;
 }
 
-/* ---------- 7. АДАПТИВ И ДОСТУПНОСТЬ ---------- */
+/* адаптив */
 
 @media (max-width: 1100px) {
   .Instruments {
@@ -750,11 +761,11 @@ body[data-playing='true'] .Sky__hint {
   }
 
   .Instrument--wind {
-    grid-column: 1 / -1; /* на планшете ветер во всю ширину под двумя синтами */
+    grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .Station {
     padding: 12px;
   }
@@ -775,7 +786,7 @@ body[data-playing='true'] .Sky__hint {
     min-height: 0;
   }
 
-  .Forecast__mood {
+  .Forecast__weather {
     font-size: 36px;
   }
 
@@ -788,6 +799,15 @@ body[data-playing='true'] .Sky__hint {
     height: 8px;
   }
 }
+
+@media (max-width: 360px) {
+  .Instrument__controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* меньше движения */
 
 @media (prefers-reduced-motion: reduce) {
   .Cloud {
