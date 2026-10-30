@@ -387,10 +387,12 @@ const params = {
 }
 
 const controlValues = {}
+const controls = {}
 
 function setParam(name, value) {
   controlValues[name] = value
   if (audio && params[name]) params[name](value)
+  if (name.endsWith('Volume')) updateMute(name.slice(0, -6))
 }
 
 function softWave(type, partials = 5) {
@@ -478,14 +480,21 @@ async function togglePlay() {
   state.starting = true
   setStartText('загрузка')
   try {
-    Tone.getContext().lookAhead = 0.15
+    const context = Tone.getContext()
+    context.lookAhead = 0.15
     await Tone.start()
     if (state.dayComplete) setWeather('fog')
 
     if (audio) Object.values(audio).forEach((node) => node.dispose())
     audio = null
     Tone.getTransport().bpm.value = BPM
-    audio = buildAudio()
+    // эффекты запускаются сразу
+    context.lookAhead = 0
+    try {
+      audio = buildAudio()
+    } finally {
+      context.lookAhead = 0.15
+    }
     Object.keys(params).forEach((name) => params[name](controlValues[name]))
     Object.keys(state.mutes).forEach(applyMute)
     buildSequencer()
@@ -557,8 +566,10 @@ function setupControl(el, surface, render) {
 
   surface.addEventListener('dblclick', () => set(initial))
 
-  set(initial)
-  return { set, get: () => current }
+  const control = { set, get: () => current, reset: () => set(initial) }
+  controls[name] = control
+  control.reset()
+  return control
 }
 
 // ручки
@@ -727,24 +738,37 @@ function updateWavePicker(el) {
 
 // вкл и выкл
 
-function setupMute(button) {
-  const target = button.dataset.mute
+function updateMute(target) {
+  const button = document.querySelector(`[data-mute="${target}"]`)
+  if (!button) return
   const card = button.closest('.Instrument')
   const name = card.querySelector('.Instrument__name').textContent
+  const on = !state.mutes[target] && controlValues[target + 'Volume'] > 0
 
-  function render() {
-    const on = !state.mutes[target]
-    button.setAttribute('aria-pressed', on)
-    button.setAttribute('aria-label', `${name}: ${on ? 'звучит' : 'тихо'}`)
-    card.classList.toggle('Instrument--muted', !on)
-  }
+  button.setAttribute('aria-pressed', on)
+  button.setAttribute('aria-label', `${on ? 'выключить' : 'включить'} ${name}`)
+  button.title = `${on ? 'выключить' : 'включить'} ${name}`
+  const label = button.querySelector('.Mute__label')
+  if (label) label.textContent = on ? 'вкл' : 'выкл'
+  card.classList.toggle('Instrument--muted', !on)
+}
+
+function setupMute(button) {
+  const target = button.dataset.mute
+  const label = document.createElement('span')
+  label.className = 'Mute__label'
+  button.appendChild(label)
 
   button.addEventListener('click', () => {
-    state.mutes[target] = !state.mutes[target]
+    const volume = target + 'Volume'
+    if (state.mutes[target] || controlValues[volume] === 0) {
+      state.mutes[target] = false
+      if (controlValues[volume] === 0) controls[volume].reset()
+    } else state.mutes[target] = true
     applyMute(target)
-    render()
+    updateMute(target)
   })
-  render()
+  updateMute(target)
 }
 
 // лампы
@@ -759,7 +783,8 @@ const LAMP_PART = {
 const lampTimers = {}
 
 function flashLamp(name) {
-  if (state.mutes[LAMP_PART[name]]) return
+  const part = LAMP_PART[name]
+  if (state.mutes[part] || controlValues[part + 'Volume'] === 0) return
   const lamp = document.querySelector(`[data-lamp="${name}"]`)
   if (!lamp) return
   lamp.classList.add('Lamp--on')
@@ -885,6 +910,87 @@ function animateSky() {
   requestAnimationFrame(animateSky)
 }
 
+// курсор
+
+function setupCursor() {
+  const finePointer = window.matchMedia('(any-hover: hover) and (any-pointer: fine)')
+  const cursor = document.createElement('div')
+  cursor.className = 'Cursor'
+  cursor.setAttribute('aria-hidden', 'true')
+  cursor.innerHTML = '<span class="Cursor__dot"></span>'
+  document.body.appendChild(cursor)
+
+  let x = 0
+  let y = 0
+  let frame = 0
+  let dragging = false
+  let blurred = false
+
+  function updateTarget(target) {
+    const control = target instanceof Element
+      ? target.closest('button, [role="slider"], a[href], [tabindex]:not([tabindex="-1"])')
+      : null
+    const interactive = control && !control.matches(':disabled, [aria-disabled="true"]')
+    cursor.classList.toggle('Cursor--interactive', dragging || Boolean(interactive))
+  }
+
+  function hide() {
+    cancelAnimationFrame(frame)
+    frame = 0
+    dragging = false
+    cursor.classList.remove('Cursor--visible', 'Cursor--interactive')
+    if (document.body.dataset.cursor === 'true') document.body.dataset.cursor = 'false'
+  }
+
+  function render() {
+    frame = 0
+    cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`
+    if (!cursor.classList.contains('Cursor--visible')) {
+      cursor.classList.add('Cursor--visible')
+      document.body.dataset.cursor = 'true'
+    }
+  }
+
+  function move(event) {
+    if (event.pointerType !== 'mouse' || !finePointer.matches || blurred) {
+      hide()
+      return
+    }
+    x = event.clientX
+    y = event.clientY
+    updateTarget(event.target)
+    if (!frame) frame = requestAnimationFrame(render)
+  }
+
+  document.addEventListener('pointermove', move, { passive: true })
+  document.addEventListener('pointerdown', (event) => {
+    move(event)
+    dragging = event.pointerType === 'mouse' && cursor.classList.contains('Cursor--interactive')
+  }, { passive: true })
+  document.addEventListener('pointerup', (event) => {
+    dragging = false
+    if (event.pointerType === 'mouse' && finePointer.matches && !blurred)
+      updateTarget(document.elementFromPoint(event.clientX, event.clientY))
+  }, { passive: true })
+  document.addEventListener('pointercancel', hide, { passive: true })
+  document.addEventListener('pointerout', (event) => {
+    if (!event.relatedTarget) hide()
+  }, { passive: true })
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) hide()
+  })
+  window.addEventListener('blur', () => {
+    blurred = true
+    hide()
+  })
+  window.addEventListener('focus', () => {
+    blurred = false
+  })
+  finePointer.addEventListener('change', () => {
+    if (!finePointer.matches) hide()
+  })
+}
+
 // запуск
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -895,6 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.Knob').forEach(createKnob)
   document.querySelectorAll('.WavePicker').forEach(createWavePicker)
   document.querySelectorAll('[data-mute]').forEach(setupMute)
+  setupCursor()
 
   document.getElementById('startButton').addEventListener('click', togglePlay)
 
