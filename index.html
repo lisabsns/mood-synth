@@ -10,27 +10,43 @@
     <script src="script.js"></script>
   </head>
 
-  <body data-mood="minor" data-playing="false">
+  <body data-weather="fog" data-playing="false">
     <div class="Station">
-      <!-- ===== ПАНЕЛЬ: название, погода, время, старт ===== -->
+      <!-- панель -->
       <header class="Header">
         <div class="Logo">
           <h1 class="Logo__name">внутренняя погода</h1>
           <p class="Logo__note">метеостанция настроения</p>
         </div>
 
-        <div class="MoodSwitch" role="radiogroup" aria-label="погода">
+        <div class="WeatherSwitch" role="radiogroup" aria-label="погода">
           <button
-            class="MoodSwitch__option"
-            data-mood-option="minor"
+            class="WeatherSwitch__option"
+            data-weather-option="fog"
             role="radio"
             aria-checked="true"
           >
-            пасмурно
+            туман
           </button>
           <button
-            class="MoodSwitch__option"
-            data-mood-option="major"
+            class="WeatherSwitch__option"
+            data-weather-option="drizzle"
+            role="radio"
+            aria-checked="false"
+          >
+            морось
+          </button>
+          <button
+            class="WeatherSwitch__option"
+            data-weather-option="storm"
+            role="radio"
+            aria-checked="false"
+          >
+            гроза
+          </button>
+          <button
+            class="WeatherSwitch__option"
+            data-weather-option="clear"
             role="radio"
             aria-checked="false"
           >
@@ -49,7 +65,7 @@
         </button>
       </header>
 
-      <!-- ===== НЕБО: живой градиент (единственный цветной элемент) ===== -->
+      <!-- небо -->
       <section class="Sky" id="sky" aria-label="небо">
         <div class="Sky__weather">
           <div class="Sky__layer Sky__layer--still">
@@ -57,13 +73,25 @@
             <span class="Cloud Cloud--b"></span>
             <span class="Cloud Cloud--c"></span>
           </div>
-          <div class="Sky__layer Sky__layer--minor">
+          <div class="Sky__layer Sky__layer--fog">
             <span class="Cloud Cloud--a"></span>
             <span class="Cloud Cloud--b"></span>
             <span class="Cloud Cloud--c"></span>
             <span class="Cloud Cloud--d"></span>
           </div>
-          <div class="Sky__layer Sky__layer--major">
+          <div class="Sky__layer Sky__layer--drizzle">
+            <span class="Cloud Cloud--a"></span>
+            <span class="Cloud Cloud--b"></span>
+            <span class="Cloud Cloud--c"></span>
+            <span class="Cloud Cloud--d"></span>
+          </div>
+          <div class="Sky__layer Sky__layer--storm">
+            <span class="Cloud Cloud--a"></span>
+            <span class="Cloud Cloud--b"></span>
+            <span class="Cloud Cloud--c"></span>
+            <span class="Cloud Cloud--d"></span>
+          </div>
+          <div class="Sky__layer Sky__layer--clear">
             <span class="Cloud Cloud--a"></span>
             <span class="Cloud Cloud--b"></span>
             <span class="Cloud Cloud--c"></span>
@@ -80,7 +108,7 @@
         <div class="Sky__grain" aria-hidden="true"></div>
 
         <div class="Forecast">
-          <p class="Forecast__mood" id="forecastMood">пасмурно</p>
+          <p class="Forecast__weather" id="forecastWeather">туман</p>
           <p class="Forecast__tempo" id="forecastTempo">тишина</p>
         </div>
         <p class="Sky__hint" id="skyHint">
@@ -88,10 +116,10 @@
         </p>
       </section>
 
-      <!-- ===== ПРИБОРЫ ===== -->
+      <!-- приборы -->
       <main class="Instruments">
-        <!-- синт 1 -->
-        <section class="Instrument Instrument--drops" data-target="bells">
+        <!-- капли -->
+        <section class="Instrument Instrument--drops" data-target="drops">
           <header class="Instrument__head">
             <div class="Instrument__title">
               <h2 class="Instrument__name">капли</h2>
@@ -99,29 +127,35 @@
             </div>
             <span
               class="Lamp Lamp--drop"
-              data-lamp="bells"
+              data-lamp="drops"
               aria-hidden="true"
             ></span>
             <button
               class="Mute"
-              data-mute="bells"
+              data-mute="drops"
               aria-pressed="true"
               aria-label="капли включены"
             ></button>
           </header>
-          <div class="WavePicker" data-wave="bells"></div>
+          <div class="WavePicker" data-wave="drops"></div>
           <div class="Instrument__controls">
             <div
               class="Knob Knob--xl"
-              data-param="bellsVolume"
+              data-param="dropsVolume"
               data-value="0.8"
               data-label="сила"
+            ></div>
+            <div
+              class="Knob"
+              data-param="dropsHumidity"
+              data-value="0.3"
+              data-label="влажность"
             ></div>
           </div>
         </section>
 
-        <!-- синт 2 -->
-        <section class="Instrument Instrument--clouds" data-target="chords">
+        <!-- облака -->
+        <section class="Instrument Instrument--clouds" data-target="clouds">
           <header class="Instrument__head">
             <div class="Instrument__title">
               <h2 class="Instrument__name">облака</h2>
@@ -129,41 +163,35 @@
             </div>
             <span
               class="Lamp Lamp--cloud"
-              data-lamp="chords"
+              data-lamp="clouds"
               aria-hidden="true"
             ></span>
             <button
               class="Mute"
-              data-mute="chords"
+              data-mute="clouds"
               aria-pressed="true"
               aria-label="облака включены"
             ></button>
           </header>
-          <div class="WavePicker" data-wave="chords"></div>
+          <div class="WavePicker" data-wave="clouds"></div>
           <div class="Instrument__controls">
             <div
               class="Fader"
-              data-param="chordsVolume"
+              data-param="cloudsVolume"
               data-value="0.8"
               data-label="сила"
             ></div>
             <div
-              class="Knob"
-              data-param="chordsChorus"
+              class="Knob Knob--lg"
+              data-param="cloudsFog"
               data-value="0.5"
               data-label="туман"
-            ></div>
-            <div
-              class="Knob"
-              data-param="chordsDelay"
-              data-value="0.25"
-              data-label="отражение"
             ></div>
           </div>
         </section>
 
-        <!-- барабаны -->
-        <section class="Instrument Instrument--wind" data-target="drums">
+        <!-- ветер -->
+        <section class="Instrument Instrument--wind" data-target="wind">
           <header class="Instrument__head">
             <div class="Instrument__title">
               <h2 class="Instrument__name">ветер</h2>
@@ -171,34 +199,40 @@
             </div>
             <button
               class="Mute"
-              data-mute="drums"
+              data-mute="wind"
               aria-pressed="true"
               aria-label="ветер включён"
             ></button>
           </header>
           <div class="Gusts" aria-hidden="true">
             <span class="Gust"
-              ><span class="Lamp" data-lamp="kick"></span>бочка</span
+              ><span class="Lamp" data-lamp="windKick"></span>бочка</span
             >
             <span class="Gust"
-              ><span class="Lamp" data-lamp="clap"></span>клэп</span
+              ><span class="Lamp" data-lamp="windClap"></span>клэп</span
             >
             <span class="Gust"
-              ><span class="Lamp" data-lamp="hat"></span>хэт</span
+              ><span class="Lamp" data-lamp="windHat"></span>хэт</span
             >
           </div>
           <div class="Instrument__controls">
             <div
               class="Fader"
-              data-param="drumsVolume"
+              data-param="windVolume"
               data-value="0.8"
               data-label="сила"
             ></div>
             <div
-              class="Knob Knob--lg"
-              data-param="drumsCrush"
+              class="Knob"
+              data-param="windGusts"
+              data-value="0.8"
+              data-label="порывы"
+            ></div>
+            <div
+              class="Knob"
+              data-param="storm"
               data-value="0"
-              data-label="помехи"
+              data-label="гроза"
             ></div>
           </div>
         </section>
