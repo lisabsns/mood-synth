@@ -81,6 +81,52 @@ button {
   padding: 20px;
 }
 
+.Station,
+.Station * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* курсор */
+
+.Cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+
+.Cursor--visible {
+  opacity: 1;
+}
+
+.Cursor__dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  transform: translate(-50%, -50%);
+  transition: transform 0.12s ease;
+}
+
+.Cursor--interactive .Cursor__dot {
+  transform: translate(-50%, -50%) scale(1.7);
+}
+
+@media (any-hover: hover) and (any-pointer: fine) {
+  body[data-cursor='true'],
+  body[data-cursor='true'] * {
+    cursor: none !important;
+  }
+}
+
 /* панель */
 
 .Header {
@@ -693,13 +739,19 @@ body[data-playing='true'] .Sky__hint {
 /* вкл и выкл */
 
 .Mute {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   flex: none;
-  width: 30px;
+  min-width: 60px;
   height: 30px;
   margin: -2px -4px 0 0;
   border-radius: 4px;
+}
+
+.Mute__label {
+  font-size: 11px;
 }
 
 .Mute::before {
@@ -768,10 +820,106 @@ body[data-playing='true'] .Sky__hint {
 @media (max-width: 760px) {
   .Station {
     padding: 12px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
   }
 
   .Header {
-    padding: 14px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'logo start'
+      'weather weather'
+      'time time';
+    gap: 14px 10px;
+    padding: 16px;
+  }
+
+  .Logo {
+    grid-area: logo;
+    min-width: 0;
+    margin-right: 0;
+  }
+
+  .Logo__name {
+    font-size: 20px;
+  }
+
+  .Logo__note {
+    font-size: 11px;
+  }
+
+  .StartButton {
+    grid-area: start;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 12px;
+    font-size: 14px;
+    touch-action: manipulation;
+  }
+
+  .WeatherSwitch {
+    grid-area: weather;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .WeatherSwitch__option {
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 4px;
+    font-size: 13px;
+    touch-action: manipulation;
+  }
+
+  .Time {
+    grid-area: time;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .Steps {
+    display: grid;
+    flex: 1;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    gap: 4px;
+    max-width: 256px;
+  }
+
+  .Step {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .Sky {
+    height: clamp(200px, 28vh, 240px);
+    height: clamp(200px, 28svh, 240px);
+    border-radius: 22px;
+  }
+
+  .Forecast {
+    top: 20px;
+    left: 20px;
+  }
+
+  .Forecast__weather {
+    font-size: 36px;
+  }
+
+  .Forecast__tempo {
+    font-size: 14px;
+  }
+
+  .Sky__hint {
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .Instruments {
@@ -783,33 +931,108 @@ body[data-playing='true'] .Sky__hint {
   }
 
   .Instrument {
+    gap: 16px;
     min-height: 0;
+    padding: 16px 18px 20px;
   }
 
-  .Forecast__weather {
-    font-size: 36px;
+  .Instrument__head {
+    align-items: center;
   }
 
-  .Steps {
-    gap: 3px;
+  .Instrument__head .Lamp {
+    margin-top: 0;
   }
 
-  .Step {
-    width: 8px;
-    height: 8px;
+  .Mute {
+    min-width: 64px;
+    height: 44px;
+    margin-top: 0;
+    touch-action: manipulation;
+  }
+
+  .Mute__label {
+    font-size: 12px;
+  }
+
+  .WavePicker {
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-left: -4px;
+  }
+
+  .WaveButton {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    touch-action: manipulation;
+  }
+
+  .WavePicker__name {
+    flex-basis: 100%;
+    margin-left: 4px;
+  }
+
+  .Instrument__controls {
+    justify-content: space-between;
+    gap: 16px 12px;
+    margin-top: 8px;
+  }
+
+  .Instrument__controls > * {
+    margin-inline: 0;
+  }
+
+  .Instrument--drops .Instrument__controls {
+    gap: 16px;
+    margin-left: 0;
+  }
+
+  .Knob--xl .Knob__dial {
+    width: clamp(136px, 40vw, 184px);
+    height: clamp(136px, 40vw, 184px);
+  }
+
+  .Instrument--wind .Knob__dial {
+    width: clamp(76px, 22vw, 92px);
+    height: clamp(76px, 22vw, 92px);
+  }
+
+  .Control__caption {
+    gap: 4px;
+  }
+
+  .Control__label {
+    font-size: 12px;
+  }
+
+  .Gusts {
+    flex-wrap: wrap;
+    gap: 10px 16px;
   }
 }
 
 @media (max-width: 360px) {
-  .Instrument__controls {
-    flex-wrap: wrap;
-    justify-content: center;
+  .Header {
+    padding: 14px;
+  }
+
+  .Logo__name {
+    font-size: 18px;
+  }
+
+  .WeatherSwitch__option {
+    font-size: 12px;
   }
 }
 
 /* меньше движения */
 
 @media (prefers-reduced-motion: reduce) {
+  .Cursor__dot {
+    transition: none;
+  }
+
   .Cloud {
     animation: none;
   }
